@@ -1,4 +1,4 @@
-name: Extract and Update
+name: Full Extract and Update
 
 on:
   push:
@@ -8,8 +8,7 @@ on:
 
 permissions:
   contents: write
-  # এখানে 'workflows' এর বদলে নিচের ফরম্যাটটি ব্যবহার করো
-  actions: write 
+  actions: write  # এটি অ্যাকশন ফাইল পরিবর্তনের অনুমতি চাওয়ার জন্য
 
 jobs:
   unzip-process:
@@ -18,13 +17,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true # এটি টোকেনটি সেশনে ধরে রাখবে
 
-      - name: Extract Zip
+      - name: Extract Everything
         run: |
           ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
           if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
-            echo "Extracting $ZIP_FILE..."
+            echo "Extracting everything including .github folder..."
             unzip -o "$ZIP_FILE" -d .
             rm "$ZIP_FILE"
           else
@@ -32,12 +31,13 @@ jobs:
             exit 0
           fi
 
-      - name: Commit and Push
+      - name: Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
           git add .
-          # Workflow ফাইল থাকলে সেগুলো বাদ দিয়ে পুশ করার চেষ্টা করবে যাতে এরর না দেয়
-          git commit -m "chore: auto-extract files" || echo "No changes to commit"
+          git commit -m "chore: full extract including workflows" || echo "No changes"
+          
+          # সাধারণ পুশ কাজ না করলে নিচের কমান্ডটি ব্যবহার হয়
           git push origin main
