@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # এটি দিলে আপনি নিজে বাটন চেপেও রান করতে পারবেন
+  workflow_dispatch:
 
 jobs:
   unzip-and-update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      workflows: write # এটিই সেই প্রয়োজনীয় পারমিশন
 
     steps:
       - name: Checkout code
@@ -20,14 +21,11 @@ jobs:
 
       - name: Find and Extract Zip
         run: |
-          # জিপ ফাইল আছে কিনা চেক করা (Error এড়াতে 2>/dev/null ব্যবহার করা হয়েছে)
           ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
           
           if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
             echo "Found: $ZIP_FILE. Extracting now..."
-            # -o দিয়ে রিপ্লেস করা হবে
             unzip -o "$ZIP_FILE" -d .
-            
             echo "Deleting $ZIP_FILE..."
             rm "$ZIP_FILE"
           else
@@ -45,6 +43,6 @@ jobs:
           if git diff --quiet && git diff --staged --quiet; then
             echo "Nothing to update."
           else
-            git commit -m "chore: auto-extract and overwrite files"
+            git commit -m "chore: auto-extract files including workflows"
             git push origin main
           fi
