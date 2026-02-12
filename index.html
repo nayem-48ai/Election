@@ -1,19 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="bn">
 <head>
-    <title>Election 26 OSD Dashboard</title>
+    <meta charset="UTF-8">
+    <title>নির্বাচন ২০২৬ ড্যাশবোর্ড</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: inline-block; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 20px; }
+        h1 { color: #1a73e8; text-align: center; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f8f9fa; color: #333; }
+        .voter-count { font-weight: bold; color: #28a745; }
+        #status { text-align: center; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Election 26 Data Dashboard</h1>
-        <p>Database Status: <b>Online (SQLite)</b></p>
-        <p>Total Maps: <b>Available in /maps</b></p>
-        <hr>
-        <p>এই প্রজেক্টটি GitHub Actions এর মাধ্যমে অটো-ডিপ্লয় হয়েছে।</p>
-    </div>
+
+<div class="container">
+    <h1>বাংলাদেশ নির্বাচন ২০২৬ ডাটাবেস</h1>
+    <div id="status">ডাটা লোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।</div>
+    
+    <table id="data-table" style="display:none;">
+        <thead>
+            <tr>
+                <th>আসন</th>
+                <th>কোড</th>
+                <th>মোট ভোটার</th>
+            </tr>
+        </thead>
+        <tbody id="db-content"></tbody>
+    </table>
+</div>
+
+<script>
+    async function loadDatabase() {
+        try {
+            const sqlPromise = initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+            const dataPromise = fetch('database.sqlite').then(res => res.arrayBuffer());
+            
+            const [SQL, buf] = await Promise.all([sqlPromise, dataPromise]);
+            const db = new SQL.Database(new Uint8Array(buf));
+
+            // স্ক্রিনশট অনুযায়ী 'constituencies' টেবিল থেকে ডাটা নিচ্ছি
+            const res = db.exec("SELECT name, code, total_voter FROM constituencies LIMIT 20");
+            const rows = res[0].values;
+
+            const tableBody = document.getElementById('db-content');
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td class="voter-count">${row[2].toLocaleString()}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            document.getElementById('status').innerText = "সরাসরি database.sqlite থেকে ডাটা দেখানো হচ্ছে";
+            document.getElementById('data-table').style.display = "table";
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('status').innerText = "ভুল: ডাটাবেস ফাইলটি পাওয়া যায়নি বা লোড হয়নি।";
+        }
+    }
+
+    loadDatabase();
+</script>
+
 </body>
 </html>
