@@ -3,14 +3,19 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # যখনই মেইন ব্রাঞ্চে পুশ হবে
-  workflow_run:
-    workflows: ["Sync on Push"] # তোমার আগের সিঙ্ক শেষ হলেও এটি চলবে
-    types:
-      - completed
+      - main
+  workflow_dispatch:
 
+# এই অংশটি যোগ করা হয়েছে টোকেন সমস্যা সমাধানের জন্য
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# একটি মাত্র রান নিশ্চিত করতে (concurrency)
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -25,8 +30,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # এখানে পুরো রিপোজিটরি বা শুধু নির্দিষ্ট ফোল্ডার দিতে পারো
-          path: '.'
+          path: '.' # বর্তমান ফোল্ডারের সব ফাইল আপলোড হবে
 
       - name: Deploy to GitHub Pages
         id: deployment
