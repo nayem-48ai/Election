@@ -1,0 +1,8 @@
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (1, 'brisal', 6, 'বরিশাল', 'বরিশাল', 7981122, 4054074, 3926970, 78);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (2, 'cttgram', 3, 'চট্টগ্রাম', 'চট্টগ্রাম', 25660490, 13332153, 12328163, 174);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (3, 'dhaka', 2, 'ঢাকা', 'ঢাকা', 30491638, 15524325, 14966988, 325);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (4, 'khulna', 5, 'খুলনা', 'খুলনা', 14322775, 7167594, 7155037, 144);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (5, 'mymnsingh', 9, 'ময়মনসিংহ', 'ময়মনসিংহ', 10224688, 5146563, 5078009, 116);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (6, 'rajsahee', 4, 'রাজশাহী ', 'রাজশাহী ', 16401244, 8204919, 8196153, 172);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (7, 'rngpur', 8, 'রংপুর', 'রংপুর', 14184122, 7083334, 7100657, 131);
+INSERT INTO divisions (id, slug, code, name, name_en, total_voters, total_male_voters, total_female_voters, total_third_gender_voters) VALUES (8, 'silet', 7, 'সিলেট', 'সিলেট', 8445820, 4312192, 4133548, 80);
