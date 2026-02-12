@@ -1,37 +1,50 @@
-name: Deploy to GitHub Pages
+name: Extract Zip and Update Main
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-
-# এই অংশটি যোগ করা হয়েছে টোকেন সমস্যা সমাধানের জন্য
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# একটি মাত্র রান নিশ্চিত করতে (concurrency)
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  workflow_dispatch: # এটি দিলে আপনি নিজে বাটন চেপেও রান করতে পারবেন
 
 jobs:
-  build-and-deploy:
+  unzip-and-update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # বর্তমান ফোল্ডারের সব ফাইল আপলোড হবে
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Find and Extract Zip
+        run: |
+          # জিপ ফাইল আছে কিনা চেক করা (Error এড়াতে 2>/dev/null ব্যবহার করা হয়েছে)
+          ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
+          
+          if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
+            echo "Found: $ZIP_FILE. Extracting now..."
+            # -o দিয়ে রিপ্লেস করা হবে
+            unzip -o "$ZIP_FILE" -d .
+            
+            echo "Deleting $ZIP_FILE..."
+            rm "$ZIP_FILE"
+          else
+            echo "No zip file found to extract. Skipping..."
+            exit 0
+          fi
+
+      - name: Save and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .
+          
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "Nothing to update."
+          else
+            git commit -m "chore: auto-extract and overwrite files"
+            git push origin main
+          fi
