@@ -35,7 +35,7 @@ jobs:
         run: |
           # গাইড ফাইল ডাউনলোড এবং নির্দিষ্ট পাথে সেভ (রিপ্লেস করবে)
           mkdir -p .github/workflows
-          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/workflows/README.md
+          curl -sL "https://raw.githubusercontent.com/nayem-48ai/Election/refs/heads/main/README.md" -o .github/workflows/README.md
           
           # গিট কনফিগ এবং পুশ
           git config --global user.name "github-actions[bot]"
