@@ -1,0 +1,28 @@
+name: Sync on Push
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # হাতে কলমে রান করার অপশনও থাকলো
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync from Public Repo
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git remote add upstream https://github.com/AminulBD/Election26OSD.git
+          git fetch upstream
+          # মূল রিপোজিটরির ব্রাঞ্চের নাম 'main' না হয়ে 'master' হতে পারে, সেটি চেক করে নিবে
+          git checkout main || git checkout -b main
+          git merge upstream/main --allow-unrelated-histories -m "Sync with upstream"
+          git push origin main
