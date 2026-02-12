@@ -1,47 +1,114 @@
-name: Super Extract and Force Update
+name: Tnayem48 Universal Runner
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: write
+    inputs:
+      action_type:
+        description: 'Choose a professional task'
+        required: true
+        default: '-- Select Action --'
+        type: choice
+        options:
+          - '-- Select Action --'
+          - 'unzip & Build (normalize)'
+          - 'Clean Repository'
+          - 'Have a Look (Preview)'
+          - 'unzip project (any zip files)'
+          - 'Build/Normalize Project (Build Only)'
 
 jobs:
-  unzip-and-force-push:
+  # ১. পুশ হওয়ার সাথে সাথে README তৈরি করার জব
+  setup-guide:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # পুরো হিস্টোরি নেওয়ার জন্য
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract and Overwrite
+      - name: Update Guide README
         run: |
-          ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
-          if [ -n "$ZIP_FILE" ]; then
-            unzip -o "$ZIP_FILE" -d ./temp_folder
-            # শুধু .github ফোল্ডারটি ম্যানুয়ালি কপি করা
-            cp -r ./temp_folder/.github/workflows/* .github/workflows/ 2>/dev/null || true
-            # বাকি ফাইলগুলো কপি করা
-            cp -r ./temp_folder/* . 2>/dev/null || true
-            rm -rf ./temp_folder
-            rm "$ZIP_FILE"
-          fi
-
-      - name: Commit and Push with GITHUB_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+          # গাইড ফাইল ডাউনলোড এবং নির্দিষ্ট পাথে সেভ (রিপ্লেস করবে)
+          mkdir -p .github/workflows
+          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/workflows/README.md
+          
+          # গিট কনফিগ এবং পুশ
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/README.md
           
-          git add .
-          git commit -m "chore: force update workflows from zip" || exit 0
+          # শুধুমাত্র পরিবর্তন থাকলেই পুশ করবে
+          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: sync workflow guide" && git push origin main)
+
+  # ২. আগের সব ফিচার অক্ষুণ্ণ রেখে ভার্চুয়াল রানার জব
+  virtual-execute:
+    # এটি শুধু ম্যানুয়ালি চালালে রান হবে (Select Action সিলেক্ট করলে)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Virtual Execution Engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SELECTED_OPTION: ${{ github.event.inputs.action_type }}
+        run: |
+          if [[ "$SELECTED_OPTION" == "-- Select Action --" ]]; then
+            echo "No action selected. Skipping execution."
+            exit 0
+          fi
+
+          declare -A ACTION_MAP
+          ACTION_MAP["unzip & Build (normalize)"]="build"
+          ACTION_MAP["Clean Repository"]="remove"
+          ACTION_MAP["Have a Look (Preview)"]="preview"
+          ACTION_MAP["unzip project (any zip files)"]="unzip"
+          ACTION_MAP["Build/Normalize Project (Build Only)"]="build_only"
+
+          ACTION_NAME=${ACTION_MAP["$SELECTED_OPTION"]}
+          BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
           
-          # সরাসরি পুশ কাজ না করলে নিচের রিমোট সেটআপটি কাজ করবে
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
-          git push origin main
+          curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
+          import yaml, sys, subprocess, os
+          def run_bash(script):
+              if 'peaceiris/actions-gh-pages' in script or 'Deploy to GitHub Pages' in script:
+                  deploy_script = \"\"\"
+                  cd dist 2>/dev/null || cd .
+                  git init
+                  git config user.name 'github-actions[bot]'
+                  git config user.email 'github-actions[bot]@users.noreply.github.com'
+                  git add .
+                  git commit -m 'deploy: virtual build push'
+                  git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git master:tnx-bd
+                  \"\"\"
+                  subprocess.run(['bash', '-c', deploy_script], check=True)
+              else:
+                  subprocess.run(['bash', '-c', script], check=True)
+
+          try:
+              content = sys.stdin.read()
+              if not content.strip(): sys.exit(0)
+              data = yaml.safe_load(content)
+              for job in data.get('jobs', {}).values():
+                  for step in job.get('steps', []):
+                      if 'run' in step: run_bash(step['run'])
+                      elif 'uses' in step and 'actions-gh-pages' in step['uses']: run_bash('peaceiris/actions-gh-pages')
+          except Exception as e:
+              print(f'Error: {e}'); sys.exit(1)
+          "
