@@ -11,22 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      workflows: write # এটিই সেই প্রয়োজনীয় পারমিশন
+      workflows: write # এই লাইনটি অবশ্যই যোগ করতে হবে
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          # workflows পরিবর্তন করার জন্য এটি প্রয়োজন
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find and Extract Zip
         run: |
           ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
-          
           if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
             echo "Found: $ZIP_FILE. Extracting now..."
             unzip -o "$ZIP_FILE" -d .
-            echo "Deleting $ZIP_FILE..."
             rm "$ZIP_FILE"
           else
             echo "No zip file found to extract. Skipping..."
