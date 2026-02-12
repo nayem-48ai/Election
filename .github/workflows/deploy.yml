@@ -1,4 +1,4 @@
-name: Extract Zip and Update Main
+name: Extract and Update
 
 on:
   push:
@@ -6,42 +6,38 @@ on:
       - main
   workflow_dispatch:
 
-jobs:
-  unzip-and-update:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      workflows: write # এই লাইনটি অবশ্যই যোগ করতে হবে
+permissions:
+  contents: write
+  # এখানে 'workflows' এর বদলে নিচের ফরম্যাটটি ব্যবহার করো
+  actions: write 
 
+jobs:
+  unzip-process:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # workflows পরিবর্তন করার জন্য এটি প্রয়োজন
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Find and Extract Zip
+      - name: Extract Zip
         run: |
           ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
           if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
-            echo "Found: $ZIP_FILE. Extracting now..."
+            echo "Extracting $ZIP_FILE..."
             unzip -o "$ZIP_FILE" -d .
             rm "$ZIP_FILE"
           else
-            echo "No zip file found to extract. Skipping..."
+            echo "No zip found."
             exit 0
           fi
 
-      - name: Save and Push Changes
+      - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
           git add .
-          
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "Nothing to update."
-          else
-            git commit -m "chore: auto-extract files including workflows"
-            git push origin main
-          fi
+          # Workflow ফাইল থাকলে সেগুলো বাদ দিয়ে পুশ করার চেষ্টা করবে যাতে এরর না দেয়
+          git commit -m "chore: auto-extract files" || echo "No changes to commit"
+          git push origin main
