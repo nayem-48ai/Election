@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       action_type:
-        description: 'Choose a professional task from the list'
+        description: 'Choose a professional task'
         required: true
         default: '-- Select Action --'
         type: choice
@@ -22,7 +22,6 @@ on:
           - 'Build React Project to Android APK (reactTOapk)'
 
 jobs:
-  # ১. পুশ হওয়ার সাথে সাথে .github/README.md অটো-আপডেট করা
   setup-guide:
     runs-on: ubuntu-latest
     permissions:
@@ -37,19 +36,14 @@ jobs:
         run: |
           mkdir -p .github
           curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/README.md
-          
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/README.md
-          
           if ! git diff --quiet --staged; then
             git commit -m "docs: auto-sync setup guide"
             git push origin main
-          else
-            echo "No changes found in Guide."
           fi
 
-  # ২. ভার্চুয়াল এক্সিকিউশন ইঞ্জিন (সব লজিক মেমোরিতে রান হবে)
   virtual-execute:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -62,12 +56,11 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Environment (Node/Java)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # অ্যাপ বিল্ডের জন্য জাভা প্রয়োজন হয়
       - name: Setup Java 21 (For APK Build)
         if: contains(github.event.inputs.action_type, 'APK')
         uses: actions/setup-java@v4
@@ -81,11 +74,10 @@ jobs:
           SELECTED_OPTION: ${{ github.event.inputs.action_type }}
         run: |
           if [[ "$SELECTED_OPTION" == "-- Select Action --" ]]; then
-            echo "Error: No valid action selected."
+            echo "Error: No action selected."
             exit 1
           fi
 
-          # ইন্টারনাল ম্যাপিং
           declare -A ACTION_MAP
           ACTION_MAP["unzip & Build (normalize)"]="build"
           ACTION_MAP["Clean Repository"]="remove"
@@ -101,10 +93,39 @@ jobs:
           echo "🌐 Fetching Logic: $ACTION_NAME"
 
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
-          import yaml, sys, subprocess, os
+          import yaml, sys, subprocess, os, json, re
+
+          # JSON থেকে মেটাডেটা লোড করার ফাংশন
+          def get_meta():
+              try:
+                  # urlTOapk এর জন্য
+                  if os.path.exists('assets/url-metadata.json'):
+                      with open('assets/url-metadata.json', 'r') as f:
+                          return json.load(f)
+                  # reactTOapk এর জন্য
+                  elif os.path.exists('assets/app-metadata.json'):
+                      with open('assets/app-metadata.json', 'r') as f:
+                          return json.load(f)
+              except: pass
+              return {}
+
+          meta = get_meta()
+
+          def replace_placeholders(script):
+              # ${{ steps.meta.outputs.XXX }} সিনট্যাক্স রিপ্লেস করা
+              mapping = {
+                  r'\${{\s*steps\.meta\.outputs\.name\s*}}': str(meta.get('appName', 'App')),
+                  r'\${{\s*steps\.meta\.outputs\.package\s*}}': str(meta.get('appPackage', 'com.app.default')),
+                  r'\${{\s*steps\.meta\.outputs\.url\s*}}': str(meta.get('appUrl', '')),
+                  r'\${{\s*steps\.meta\.outputs\.version\s*}}': str(meta.get('versionName', '1.0.0')),
+                  r'\${{\s*steps\.meta\.outputs\.code\s*}}': str(meta.get('versionCode', '1')),
+              }
+              for pattern, value in mapping.items():
+                  script = re.sub(pattern, value, script)
+              return script
 
           def run_bash(script):
-              # Deploy বা Artifact আপলোড লজিক হ্যান্ডেল করা
+              script = replace_placeholders(script)
               if 'peaceiris/actions-gh-pages' in script:
                   deploy_script = \"\"\"
                   cd dist 2>/dev/null || cd .
@@ -117,22 +138,15 @@ jobs:
                   \"\"\"
                   subprocess.run(['bash', '-c', deploy_script], check=True)
               else:
-                  # সাধারণ সব রান কমান্ড সরাসরি ব্যাশে পাঠিয়ে দেওয়া
                   subprocess.run(['bash', '-c', script], check=True)
 
           try:
               content = sys.stdin.read()
-              if not content.strip(): 
-                  print('Error: Remote content is empty!')
-                  sys.exit(1)
-                  
               data = yaml.safe_load(content)
               for job in data.get('jobs', {}).values():
                   for step in job.get('steps', []):
                       if 'run' in step:
                           run_bash(step['run'])
-                      # APK বিল্ডের পর যদি artifacts আপলোড থাকে, তবে তা ভার্চুয়ালি হ্যান্ডেল হবে (Bash কমান্ডে থাকলে)
           except Exception as e:
-              print(f'Virtual Execution Failure: {e}')
-              sys.exit(1)
+              print(f'Virtual Error: {e}'); sys.exit(1)
           "
