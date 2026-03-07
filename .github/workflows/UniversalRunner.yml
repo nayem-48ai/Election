@@ -20,11 +20,12 @@ on:
           - 'Build/Normalize Project (Build Only)'
 
 jobs:
-  # ১. পুশ হওয়ার সাথে সাথে README তৈরি করার জব
+  # ১. পুশ হওয়ার সাথে সাথে Guide ফাইল তৈরি করার জব
   setup-guide:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write  # এটিই সেই পারমিশন যা .github/workflows ডিরেক্টরিতে রাইট করতে দিবে
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -33,25 +34,28 @@ jobs:
 
       - name: Update Guide README
         run: |
-          # গাইড ফাইল ডাউনলোড এবং নির্দিষ্ট পাথে সেভ (রিপ্লেস করবে)
           mkdir -p .github/workflows
           curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/workflows/README.md
           
-          # গিট কনফিগ এবং পুশ
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/workflows/README.md
           
-          # শুধুমাত্র পরিবর্তন থাকলেই পুশ করবে
-          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: sync workflow guide" && git push origin main)
+          # পরিবর্তন থাকলে পুশ করবে
+          if ! git diff --quiet --staged; then
+            git commit -m "docs: sync workflow guide"
+            git push origin main
+          else
+            echo "No changes in Guide file."
+          fi
 
-  # ২. আগের সব ফিচার অক্ষুণ্ণ রেখে ভার্চুয়াল রানার জব
+  # ২. ভার্চুয়াল রানার জব (ম্যানুয়াল ব্যবহারের জন্য)
   virtual-execute:
-    # এটি শুধু ম্যানুয়ালি চালালে রান হবে (Select Action সিলেক্ট করলে)
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
