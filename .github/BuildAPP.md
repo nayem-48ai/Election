@@ -1,5 +1,14 @@
-<div align="center">
-<a herf="/.github/APP-build-Guide.md">Read</a>
+<div align="center">[![Build Guide](https://img.shields.io/badge/Build_Guide-Click_Here-blue?style=for-the-badge&logo=github)](https://github.com/nayem-48ai/Election/blob/main/.github/APP-build-Guide.md)
+
+</br>
+[📖 App Build Guide](./.github/APP-build-Guide.md)
+
+</br>
+<a href="https://github.com/nayem-48ai/Election/blob/main/.github/APP-build-Guide.md">
+  <img src="https://img.shields.io/badge/APP--Build--Guide-Visit%20Guide-orange?style=for-the-badge" alt="Build Guide">
+</a>
+
+
 </br>
 # أبدأ بسم الله الرحمن الرحيم
 
