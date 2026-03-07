@@ -1,4 +1,5 @@
-<div align="center">[![Build Guide](https://img.shields.io/badge/Build_Guide-Click_Here-blue?style=for-the-badge&logo=github)](https://github.com/nayem-48ai/Election/blob/main/.github/APP-build-Guide.md)
+<div align="center">
+  [![Build Guide](https://img.shields.io/badge/Build_Guide-Click_Here-blue?style=for-the-badge&logo=github)](https://github.com/nayem-48ai/Election/blob/main/.github/APP-build-Guide.md)
 
 </br>
 [📖 App Build Guide](./.github/APP-build-Guide.md)
