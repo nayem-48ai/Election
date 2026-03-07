@@ -20,12 +20,11 @@ on:
           - 'Build/Normalize Project (Build Only)'
 
 jobs:
-  # ১. পুশ হওয়ার সাথে সাথে Guide ফাইল তৈরি করার জব
+  # ১. পুশ হওয়ার সাথে সাথে .github/README.md তৈরি বা আপডেট করার জব
   setup-guide:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      actions: write  # এটিই সেই পারমিশন যা .github/workflows ডিরেক্টরিতে রাইট করতে দিবে
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -34,28 +33,31 @@ jobs:
 
       - name: Update Guide README
         run: |
-          mkdir -p .github/workflows
-          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/workflows/README.md
+          # .github ফোল্ডার নিশ্চিত করা এবং ফাইল ডাউনলোড করা
+          mkdir -p .github
+          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/README.md
           
+          # গিট কনফিগ
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/README.md
           
-          # পরিবর্তন থাকলে পুশ করবে
+          # ফাইলটি অ্যাড করা
+          git add .github/README.md
+          
+          # পরিবর্তন থাকলে পুশ করা
           if ! git diff --quiet --staged; then
-            git commit -m "docs: sync workflow guide"
+            git commit -m "docs: update guide in .github folder"
             git push origin main
           else
             echo "No changes in Guide file."
           fi
 
-  # ২. ভার্চুয়াল রানার জব (ম্যানুয়াল ব্যবহারের জন্য)
+  # ২. ভার্চুয়াল রানার (ম্যানুয়ালি চালানোর জন্য)
   virtual-execute:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      actions: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -74,7 +76,7 @@ jobs:
           SELECTED_OPTION: ${{ github.event.inputs.action_type }}
         run: |
           if [[ "$SELECTED_OPTION" == "-- Select Action --" ]]; then
-            echo "No action selected. Skipping execution."
+            echo "No action selected. Skipping."
             exit 0
           fi
 
