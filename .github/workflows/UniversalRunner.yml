@@ -89,7 +89,6 @@ jobs:
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
           import yaml, sys, subprocess, os, json, re
 
-          # JSON থেকে মেটাডেটা লোড করা
           def load_metadata():
               paths = ['assets/url-metadata.json', 'assets/app-metadata.json']
               for p in paths:
@@ -101,16 +100,21 @@ jobs:
           meta = load_metadata()
 
           def replace_placeholders(script):
-              # GitHub Actions ${{ steps.meta.outputs.xxx }} কে JSON ভ্যালু দিয়ে রিপ্লেস করা
+              # GitHub parser কে ধোঁকা দিতে ভেরিয়েবলগুলোকে ভেঙে লেখা হয়েছে (String Concatenation)
+              # এটি ${{ ... }} সিনট্যাক্স এরর ফিক্স করবে
+              p_prefix = '$' + '{{'
+              p_suffix = '}}'
+              
               mapping = {
-                  r'\${{\s*steps\.meta\.outputs\.name\s*}}': str(meta.get('appName', '')),
-                  r'\${{\s*steps\.meta\.outputs\.package\s*}}': str(meta.get('appPackage', '')),
-                  r'\${{\s*steps\.meta\.outputs\.url\s*}}': str(meta.get('appUrl', '')),
-                  r'\${{\s*steps\.meta\.outputs\.version\s*}}': str(meta.get('versionName', '')),
-                  r'\${{\s*steps\.meta\.outputs\.code\s*}}': str(meta.get('versionCode', '')),
+                  p_prefix + ' steps.meta.outputs.name ' + p_suffix: str(meta.get('appName', '')),
+                  p_prefix + ' steps.meta.outputs.package ' + p_suffix: str(meta.get('appPackage', '')),
+                  p_prefix + ' steps.meta.outputs.url ' + p_suffix: str(meta.get('appUrl', '')),
+                  p_prefix + ' steps.meta.outputs.version ' + p_suffix: str(meta.get('versionName', '')),
+                  p_prefix + ' steps.meta.outputs.code ' + p_suffix: str(meta.get('versionCode', '')),
               }
+              
               for pattern, val in mapping.items():
-                  script = re.sub(pattern, val, script)
+                  script = script.replace(pattern, val)
               return script
 
           def run_bash(script):
