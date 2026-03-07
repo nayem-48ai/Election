@@ -65,6 +65,7 @@ jobs:
           java-version: '21'
 
       - name: Virtual Execution Engine
+        id: executor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SELECTED_OPTION: ${{ github.event.inputs.action_type }}
@@ -102,19 +103,14 @@ jobs:
           meta = load_metadata()
 
           def replace_placeholders(script):
-              # GitHub Parser কে ফাকি দেওয়ার জন্য ভেরিয়েবলগুলো ডাইনামিকভাবে তৈরি করা হয়েছে
-              # এতে YAML পার্সিং এরর আর আসবে না
-              pref = '$' + '{{'
-              suff = '}}'
-              
+              pref, suff = '$' + '{{', '}}'
               placeholders = {
-                  f'{pref} steps.meta.outputs.name {suff}': str(meta.get('appName', '')),
-                  f'{pref} steps.meta.outputs.package {suff}': str(meta.get('appPackage', '')),
+                  f'{pref} steps.meta.outputs.name {suff}': str(meta.get('appName', 'App')),
+                  f'{pref} steps.meta.outputs.package {suff}': str(meta.get('appPackage', 'com.app.default')),
                   f'{pref} steps.meta.outputs.url {suff}': str(meta.get('appUrl', '')),
-                  f'{pref} steps.meta.outputs.version {suff}': str(meta.get('versionName', '')),
-                  f'{pref} steps.meta.outputs.code {suff}': str(meta.get('versionCode', '')),
+                  f'{pref} steps.meta.outputs.version {suff}': str(meta.get('versionName', '1.0.0')),
+                  f'{pref} steps.meta.outputs.code {suff}': str(meta.get('versionCode', '1')),
               }
-              
               for key, val in placeholders.items():
                   script = script.replace(key, val)
               return script
@@ -132,6 +128,10 @@ jobs:
                   git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git master:tnx-bd
                   \"\"\"
                   subprocess.run(['bash', '-c', deploy_script], check=True)
+              elif 'upload-artifact' in script or 'uses: actions/upload-artifact' in script:
+                  # ভার্চুয়ালি আপলোড স্কিপ করা হবে কারণ পরবর্তী স্টেপ এটি হ্যান্ডেল করবে
+                  print('Artifact detected: Scheduling automatic upload...')
+                  return
               else:
                   subprocess.run(['bash', '-c', script], check=True)
 
@@ -146,3 +146,15 @@ jobs:
           except Exception as e:
               print(f'Execution Error: {e}'); sys.exit(1)
           "
+          # আর্টফ্যাক্ট নাম সেট করা পরবর্তী স্টেপের জন্য
+          if [[ "$SELECTED_OPTION" == *"APK"* ]]; then
+            echo "upload_apk=true" >> $GITHUB_OUTPUT
+          fi
+
+      # ৩. APK আপলোড করা (শুধুমাত্র APK তৈরির ক্ষেত্রে)
+      - name: Export Virtual APK
+        if: steps.executor.outputs.upload_apk == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TNxBD-Build-Artifact
+          path: android/app/build/outputs/apk/debug/app-debug.apk
