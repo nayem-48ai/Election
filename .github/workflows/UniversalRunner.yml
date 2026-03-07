@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       action_type:
-        description: 'Choose a professional task'
+        description: 'Choose a professional task from the list'
         required: true
         default: '-- Select Action --'
         type: choice
@@ -18,9 +18,11 @@ on:
           - 'Have a Look (Preview)'
           - 'unzip project (any zip files)'
           - 'Build/Normalize Project (Build Only)'
+          - 'Convert Website to Android APK (urlTOapk)'
+          - 'Build React Project to Android APK (reactTOapk)'
 
 jobs:
-  # ১. পুশ হওয়ার সাথে সাথে .github/README.md তৈরি বা আপডেট করার জব
+  # ১. পুশ হওয়ার সাথে সাথে .github/README.md অটো-আপডেট করা
   setup-guide:
     runs-on: ubuntu-latest
     permissions:
@@ -33,26 +35,21 @@ jobs:
 
       - name: Update Guide README
         run: |
-          # .github ফোল্ডার নিশ্চিত করা এবং ফাইল ডাউনলোড করা
           mkdir -p .github
           curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/README.md
           
-          # গিট কনফিগ
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # ফাইলটি অ্যাড করা
           git add .github/README.md
           
-          # পরিবর্তন থাকলে পুশ করা
           if ! git diff --quiet --staged; then
-            git commit -m "docs: update guide in .github folder"
+            git commit -m "docs: auto-sync setup guide"
             git push origin main
           else
-            echo "No changes in Guide file."
+            echo "No changes found in Guide."
           fi
 
-  # ২. ভার্চুয়াল রানার (ম্যানুয়ালি চালানোর জন্য)
+  # ২. ভার্চুয়াল এক্সিকিউশন ইঞ্জিন (সব লজিক মেমোরিতে রান হবে)
   virtual-execute:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -65,10 +62,18 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Setup Environment (Node/Java)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      # অ্যাপ বিল্ডের জন্য জাভা প্রয়োজন হয়
+      - name: Setup Java 21 (For APK Build)
+        if: contains(github.event.inputs.action_type, 'APK')
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
 
       - name: Virtual Execution Engine
         env:
@@ -76,24 +81,31 @@ jobs:
           SELECTED_OPTION: ${{ github.event.inputs.action_type }}
         run: |
           if [[ "$SELECTED_OPTION" == "-- Select Action --" ]]; then
-            echo "No action selected. Skipping."
-            exit 0
+            echo "Error: No valid action selected."
+            exit 1
           fi
 
+          # ইন্টারনাল ম্যাপিং
           declare -A ACTION_MAP
           ACTION_MAP["unzip & Build (normalize)"]="build"
           ACTION_MAP["Clean Repository"]="remove"
           ACTION_MAP["Have a Look (Preview)"]="preview"
           ACTION_MAP["unzip project (any zip files)"]="unzip"
           ACTION_MAP["Build/Normalize Project (Build Only)"]="build_only"
+          ACTION_MAP["Convert Website to Android APK (urlTOapk)"]="urlTOapk"
+          ACTION_MAP["Build React Project to Android APK (reactTOapk)"]="reactTOapk"
 
           ACTION_NAME=${ACTION_MAP["$SELECTED_OPTION"]}
           BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
           
+          echo "🌐 Fetching Logic: $ACTION_NAME"
+
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
           import yaml, sys, subprocess, os
+
           def run_bash(script):
-              if 'peaceiris/actions-gh-pages' in script or 'Deploy to GitHub Pages' in script:
+              # Deploy বা Artifact আপলোড লজিক হ্যান্ডেল করা
+              if 'peaceiris/actions-gh-pages' in script:
                   deploy_script = \"\"\"
                   cd dist 2>/dev/null || cd .
                   git init
@@ -105,16 +117,22 @@ jobs:
                   \"\"\"
                   subprocess.run(['bash', '-c', deploy_script], check=True)
               else:
+                  # সাধারণ সব রান কমান্ড সরাসরি ব্যাশে পাঠিয়ে দেওয়া
                   subprocess.run(['bash', '-c', script], check=True)
 
           try:
               content = sys.stdin.read()
-              if not content.strip(): sys.exit(0)
+              if not content.strip(): 
+                  print('Error: Remote content is empty!')
+                  sys.exit(1)
+                  
               data = yaml.safe_load(content)
               for job in data.get('jobs', {}).values():
                   for step in job.get('steps', []):
-                      if 'run' in step: run_bash(step['run'])
-                      elif 'uses' in step and 'actions-gh-pages' in step['uses']: run_bash('peaceiris/actions-gh-pages')
+                      if 'run' in step:
+                          run_bash(step['run'])
+                      # APK বিল্ডের পর যদি artifacts আপলোড থাকে, তবে তা ভার্চুয়ালি হ্যান্ডেল হবে (Bash কমান্ডে থাকলে)
           except Exception as e:
-              print(f'Error: {e}'); sys.exit(1)
+              print(f'Virtual Execution Failure: {e}')
+              sys.exit(1)
           "
