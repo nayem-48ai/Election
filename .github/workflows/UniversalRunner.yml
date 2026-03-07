@@ -36,7 +36,7 @@ jobs:
           mkdir -p .github
           # README এবং APP-build-Guide উভয়ই ডাউনলোড করা হচ্ছে
           curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/README.md
-          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/APP-build-Guide.md
+          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/APP-build-Guide.md" -o .github/APP-build-Guide.md
           
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
