@@ -3,7 +3,7 @@
   "appPackage": "com.sikkha.tnx",
   "versionName": "3.0.0",
   "versionCode": 3,
-  "updateJsonUrl": "https://raw.githubusercontent.com/nayem-48ai/Sikkha-48/main/update.json",
+  "updateJsonUrl": "https://raw.githubusercontent.com/nayem-48ai/Election/refs/heads/main/update.json",
   "permissions": [
     "INTERNET",
     "READ_EXTERNAL_STORAGE",
