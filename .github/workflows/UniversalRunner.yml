@@ -40,7 +40,7 @@ jobs:
           git add .github/README.md
           git diff --quiet --staged || (git commit -m "docs: auto-sync setup guide" && git push origin main)
 
-  virtual-execute:
+  action-execute:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
@@ -64,7 +64,7 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
-      - name: Virtual Execution Engine
+      - name: Execution on System
         id: executor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,21 +87,15 @@ jobs:
           ACTION_NAME=${ACTION_MAP["$SELECTED_OPTION"]}
           BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
           
-          echo "🌐 Fetching Logic: $ACTION_NAME"
-
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
           import yaml, sys, subprocess, os, json
-
           def load_metadata():
               paths = ['assets/url-metadata.json', 'assets/app-metadata.json']
               for p in paths:
                   if os.path.exists(p):
-                      with open(p, 'r') as f:
-                          return json.load(f)
+                      with open(p, 'r') as f: return json.load(f)
               return {}
-
           meta = load_metadata()
-
           def replace_placeholders(script):
               pref, suff = '$' + '{{', '}}'
               placeholders = {
@@ -111,10 +105,8 @@ jobs:
                   f'{pref} steps.meta.outputs.version {suff}': str(meta.get('versionName', '1.0.0')),
                   f'{pref} steps.meta.outputs.code {suff}': str(meta.get('versionCode', '1')),
               }
-              for key, val in placeholders.items():
-                  script = script.replace(key, val)
+              for key, val in placeholders.items(): script = script.replace(key, val)
               return script
-
           def run_bash(script):
               script = replace_placeholders(script)
               if 'peaceiris/actions-gh-pages' in script:
@@ -128,33 +120,24 @@ jobs:
                   git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git master:tnx-bd
                   \"\"\"
                   subprocess.run(['bash', '-c', deploy_script], check=True)
-              elif 'upload-artifact' in script or 'uses: actions/upload-artifact' in script:
-                  # ভার্চুয়ালি আপলোড স্কিপ করা হবে কারণ পরবর্তী স্টেপ এটি হ্যান্ডেল করবে
-                  print('Artifact detected: Scheduling automatic upload...')
-                  return
-              else:
-                  subprocess.run(['bash', '-c', script], check=True)
-
+              elif 'upload-artifact' in script: return
+              else: subprocess.run(['bash', '-c', script], check=True)
           try:
               content = sys.stdin.read()
               if not content.strip(): sys.exit(0)
               data = yaml.safe_load(content)
               for job in data.get('jobs', {}).values():
                   for step in job.get('steps', []):
-                      if 'run' in step:
-                          run_bash(step['run'])
-          except Exception as e:
-              print(f'Execution Error: {e}'); sys.exit(1)
+                      if 'run' in step: run_bash(step['run'])
+          except Exception as e: print(f'Error: {e}'); sys.exit(1)
           "
-          # আর্টফ্যাক্ট নাম সেট করা পরবর্তী স্টেপের জন্য
           if [[ "$SELECTED_OPTION" == *"APK"* ]]; then
             echo "upload_apk=true" >> $GITHUB_OUTPUT
           fi
 
-      # ৩. APK আপলোড করা (শুধুমাত্র APK তৈরির ক্ষেত্রে)
-      - name: Export Virtual APK
+      - name: Export APP (if Generated)
         if: steps.executor.outputs.upload_apk == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: TNxBD-Build-Artifact
+          name: TNxBD-Artifact
           path: android/app/build/outputs/apk/debug/app-debug.apk
