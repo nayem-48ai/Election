@@ -42,7 +42,7 @@
 {
   "appName": "My Web App",
   "appPackage": "com.web.app",
-  "appUrl": "[https://example.com](https://example.com)",
+  "appUrl": "Enter your URL here !(https://example.com)",
   "versionName": "1.0.0",
   "versionCode": 1
 }
@@ -60,7 +60,8 @@
 React প্রজেক্টকে APK তে রূপান্তর করার পাশাপাশি এতে ইন-অ্যাপ আপডেট সিস্টেম এবং কোড অবফাসকেশন (সুরক্ষা) যুক্ত করা হয়েছে।
 
 ### মেটাডেটা, পারমিশন ও আইকন সেটআপ:
-১. **JSON ও পারমিশন:** `assets/app-metadata.json` ফাইলে অ্যাপের ডেটা এবং প্রয়োজনীয় **Permissions** দাও (এটি অটোমেটিক `AndroidManifest.xml`-এ ইনজেক্ট হয়ে যাবে):
+১. **JSON ও পারমিশন:** `assets/app-metadata.json` ফাইলে অ্যাপের ডেটা এবং প্রয়োজনীয় **Permissions** দাও Example `INTERNET` `MANAGE_EXTERNAL_STORAGE`
+(এটি অটোমেটিক `AndroidManifest.xml`-এ ইনজেক্ট হয়ে যাবে):
 
 ```json
 {
@@ -68,7 +69,7 @@ React প্রজেক্টকে APK তে রূপান্তর কর�
   "appPackage": "com.sikkha.tnx",
   "versionName": "3.0.0",
   "versionCode": 3,
-  "updateJsonUrl": "[https://raw.githubusercontent.com/.../update.json](https://raw.githubusercontent.com/.../update.json)",
+  "updateJsonUrl": "ENTER your update.json direct link (https://raw.githubusercontent.com/.../update.json)",
   "permissions": ["INTERNET", "READ_EXTERNAL_STORAGE"]
 }
 ```
