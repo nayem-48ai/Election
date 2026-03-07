@@ -31,7 +31,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Update Guide README
         run: |
           mkdir -p .github
@@ -39,10 +38,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .github/README.md
-          if ! git diff --quiet --staged; then
-            git commit -m "docs: auto-sync setup guide"
-            git push origin main
-          fi
+          git diff --quiet --staged || (git commit -m "docs: auto-sync setup guide" && git push origin main)
 
   virtual-execute:
     if: github.event_name == 'workflow_dispatch'
@@ -56,7 +52,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
+      - name: Setup Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -74,8 +70,8 @@ jobs:
           SELECTED_OPTION: ${{ github.event.inputs.action_type }}
         run: |
           if [[ "$SELECTED_OPTION" == "-- Select Action --" ]]; then
-            echo "Error: No action selected."
-            exit 1
+            echo "No action selected."
+            exit 0
           fi
 
           declare -A ACTION_MAP
@@ -90,38 +86,31 @@ jobs:
           ACTION_NAME=${ACTION_MAP["$SELECTED_OPTION"]}
           BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
           
-          echo "🌐 Fetching Logic: $ACTION_NAME"
-
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
           import yaml, sys, subprocess, os, json, re
 
-          # JSON থেকে মেটাডেটা লোড করার ফাংশন
-          def get_meta():
-              try:
-                  # urlTOapk এর জন্য
-                  if os.path.exists('assets/url-metadata.json'):
-                      with open('assets/url-metadata.json', 'r') as f:
+          # JSON থেকে মেটাডেটা লোড করা
+          def load_metadata():
+              paths = ['assets/url-metadata.json', 'assets/app-metadata.json']
+              for p in paths:
+                  if os.path.exists(p):
+                      with open(p, 'r') as f:
                           return json.load(f)
-                  # reactTOapk এর জন্য
-                  elif os.path.exists('assets/app-metadata.json'):
-                      with open('assets/app-metadata.json', 'r') as f:
-                          return json.load(f)
-              except: pass
               return {}
 
-          meta = get_meta()
+          meta = load_metadata()
 
           def replace_placeholders(script):
-              # ${{ steps.meta.outputs.XXX }} সিনট্যাক্স রিপ্লেস করা
+              # GitHub Actions ${{ steps.meta.outputs.xxx }} কে JSON ভ্যালু দিয়ে রিপ্লেস করা
               mapping = {
-                  r'\${{\s*steps\.meta\.outputs\.name\s*}}': str(meta.get('appName', 'App')),
-                  r'\${{\s*steps\.meta\.outputs\.package\s*}}': str(meta.get('appPackage', 'com.app.default')),
+                  r'\${{\s*steps\.meta\.outputs\.name\s*}}': str(meta.get('appName', '')),
+                  r'\${{\s*steps\.meta\.outputs\.package\s*}}': str(meta.get('appPackage', '')),
                   r'\${{\s*steps\.meta\.outputs\.url\s*}}': str(meta.get('appUrl', '')),
-                  r'\${{\s*steps\.meta\.outputs\.version\s*}}': str(meta.get('versionName', '1.0.0')),
-                  r'\${{\s*steps\.meta\.outputs\.code\s*}}': str(meta.get('versionCode', '1')),
+                  r'\${{\s*steps\.meta\.outputs\.version\s*}}': str(meta.get('versionName', '')),
+                  r'\${{\s*steps\.meta\.outputs\.code\s*}}': str(meta.get('versionCode', '')),
               }
-              for pattern, value in mapping.items():
-                  script = re.sub(pattern, value, script)
+              for pattern, val in mapping.items():
+                  script = re.sub(pattern, val, script)
               return script
 
           def run_bash(script):
@@ -142,11 +131,12 @@ jobs:
 
           try:
               content = sys.stdin.read()
+              if not content.strip(): sys.exit(0)
               data = yaml.safe_load(content)
               for job in data.get('jobs', {}).values():
                   for step in job.get('steps', []):
                       if 'run' in step:
                           run_bash(step['run'])
           except Exception as e:
-              print(f'Virtual Error: {e}'); sys.exit(1)
+              print(f'Error: {e}'); sys.exit(1)
           "
