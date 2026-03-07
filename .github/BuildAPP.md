@@ -5,9 +5,6 @@
 [📖 App Build Guide](./.github/APP-build-Guide.md)
 
 </br>
-<a href="./APP-build-Guide.md">
-  <img src="https://img.shields.io/badge/APP--Build--Guide-Visit%20Guide-orange?style=for-the-badge" alt="Build Guide">
-</a>
 
 
 </br>
