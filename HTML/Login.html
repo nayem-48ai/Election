@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduResult - Admin Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at top right, #eff6ff, #f8fafc); }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full glass-card rounded-[2.5rem] shadow-2xl overflow-hidden fade-in">
+        <div class="bg-blue-600 p-10 text-center text-white">
+            <i data-lucide="shield-check" class="w-12 h-12 mx-auto mb-4 text-blue-100"></i>
+            <h2 class="text-3xl font-black uppercase tracking-tight">Admin Gateway</h2>
+            <p class="text-blue-100 text-xs mt-2 font-medium opacity-80 uppercase tracking-widest">Secure Access Control</p>
+        </div>
+        
+        <div class="flex border-b border-slate-100">
+            <button id="btn-login-mode" class="flex-1 py-5 text-xs font-black uppercase text-blue-600 border-b-2 border-blue-600 transition-all">Log In</button>
+            <button id="btn-signup-mode" class="flex-1 py-5 text-xs font-black uppercase text-slate-400 hover:text-slate-600 transition-all">Sign Up</button>
+        </div>
+
+        <div class="p-10 space-y-6">
+            <form id="auth-form" class="space-y-4">
+                <div id="signup-fields" class="hidden space-y-4">
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="disp-name" placeholder="Full Name" class="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                    </div>
+                </div>
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
+                    <input type="email" id="email" placeholder="Email Address" class="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                </div>
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
+                    <input type="password" id="password" placeholder="Password" class="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                </div>
+                
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-5 h-5"></i> <span id="btn-text">SIGN IN</span>
+                </button>
+            </form>
+            
+            <div class="text-center pt-4">
+                <a href="index.html" class="text-slate-400 text-xs hover:text-blue-600 font-bold flex items-center justify-center gap-2">
+                    <i data-lucide="arrow-left" class="w-3 h-3"></i> Back to Result Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, db, doc, setDoc } from './firebase-config.js';
+        lucide.createIcons();
+
+        let mode = 'login';
+
+        const btnLogin = document.getElementById('btn-login-mode');
+        const btnSignup = document.getElementById('btn-signup-mode');
+        const signupFields = document.getElementById('signup-fields');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+
+        btnLogin.onclick = () => {
+            mode = 'login';
+            signupFields.classList.add('hidden');
+            btnLogin.className = "flex-1 py-5 text-xs font-black uppercase text-blue-600 border-b-2 border-blue-600 transition-all";
+            btnSignup.className = "flex-1 py-5 text-xs font-black uppercase text-slate-400 transition-all";
+            btnText.innerText = "SIGN IN";
+        };
+
+        btnSignup.onclick = () => {
+            mode = 'signup';
+            signupFields.classList.remove('hidden');
+            btnSignup.className = "flex-1 py-5 text-xs font-black uppercase text-blue-600 border-b-2 border-blue-600 transition-all";
+            btnLogin.className = "flex-1 py-5 text-xs font-black uppercase text-slate-400 transition-all";
+            btnText.innerText = "CREATE ACCOUNT";
+        };
+
+        onAuthStateChanged(auth, user => {
+            if(user) window.location.href = 'AdminDashboard.html';
+        });
+
+        document.getElementById('auth-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const name = document.getElementById('disp-name').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Processing...";
+
+            try {
+                if(mode === 'signup') {
+                    const result = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(result.user, { displayName: name });
+                    await setDoc(doc(db, "users", result.user.uid), { 
+                        email, displayName: name, role: 'user', isApproved: false, createdAt: new Date() 
+                    });
+                    alert("Account created! Please wait for admin approval.");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (err) {
+                alert(err.message);
+                submitBtn.disabled = false;
+                submitBtn.innerText = mode === 'login' ? "SIGN IN" : "CREATE ACCOUNT";
+            }
+        };
+    </script>
+</body>
+</html>
