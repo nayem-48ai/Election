@@ -86,8 +86,10 @@ jobs:
           ACTION_NAME=${ACTION_MAP["$SELECTED_OPTION"]}
           BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
           
+          echo "🌐 Fetching Logic: $ACTION_NAME"
+
           curl -sL "$BASE_URL/$ACTION_NAME" | python3 -c "
-          import yaml, sys, subprocess, os, json, re
+          import yaml, sys, subprocess, os, json
 
           def load_metadata():
               paths = ['assets/url-metadata.json', 'assets/app-metadata.json']
@@ -100,21 +102,21 @@ jobs:
           meta = load_metadata()
 
           def replace_placeholders(script):
-              # GitHub parser কে ধোঁকা দিতে ভেরিয়েবলগুলোকে ভেঙে লেখা হয়েছে (String Concatenation)
-              # এটি ${{ ... }} সিনট্যাক্স এরর ফিক্স করবে
-              p_prefix = '$' + '{{'
-              p_suffix = '}}'
+              # GitHub Parser কে ফাকি দেওয়ার জন্য ভেরিয়েবলগুলো ডাইনামিকভাবে তৈরি করা হয়েছে
+              # এতে YAML পার্সিং এরর আর আসবে না
+              pref = '$' + '{{'
+              suff = '}}'
               
-              mapping = {
-                  p_prefix + ' steps.meta.outputs.name ' + p_suffix: str(meta.get('appName', '')),
-                  p_prefix + ' steps.meta.outputs.package ' + p_suffix: str(meta.get('appPackage', '')),
-                  p_prefix + ' steps.meta.outputs.url ' + p_suffix: str(meta.get('appUrl', '')),
-                  p_prefix + ' steps.meta.outputs.version ' + p_suffix: str(meta.get('versionName', '')),
-                  p_prefix + ' steps.meta.outputs.code ' + p_suffix: str(meta.get('versionCode', '')),
+              placeholders = {
+                  f'{pref} steps.meta.outputs.name {suff}': str(meta.get('appName', '')),
+                  f'{pref} steps.meta.outputs.package {suff}': str(meta.get('appPackage', '')),
+                  f'{pref} steps.meta.outputs.url {suff}': str(meta.get('appUrl', '')),
+                  f'{pref} steps.meta.outputs.version {suff}': str(meta.get('versionName', '')),
+                  f'{pref} steps.meta.outputs.code {suff}': str(meta.get('versionCode', '')),
               }
               
-              for pattern, val in mapping.items():
-                  script = script.replace(pattern, val)
+              for key, val in placeholders.items():
+                  script = script.replace(key, val)
               return script
 
           def run_bash(script):
@@ -142,5 +144,5 @@ jobs:
                       if 'run' in step:
                           run_bash(step['run'])
           except Exception as e:
-              print(f'Error: {e}'); sys.exit(1)
+              print(f'Execution Error: {e}'); sys.exit(1)
           "
