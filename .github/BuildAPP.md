@@ -5,7 +5,7 @@
 [📖 App Build Guide](./.github/APP-build-Guide.md)
 
 </br>
-<a href="https://github.com/nayem-48ai/Election/blob/main/.github/APP-build-Guide.md">
+<a href="./.github/APP-build-Guide.md">
   <img src="https://img.shields.io/badge/APP--Build--Guide-Visit%20Guide-orange?style=for-the-badge" alt="Build Guide">
 </a>
 
