@@ -49,15 +49,20 @@
 
 ### 🚀 How to Execute
 
-<a href="../../actions">
-  <img src="https://img.shields.io/badge/Open--Actions-Run%20Workflow%20Now-blue?style=for-the-badge&logo=githubactions&logoColor=white" alt="Run Workflow">
-</a>
+</div>
 
 > [!TIP]
 > **ধাপ ১:** উপরের **Open Actions** বাটনে ক্লিক করুন।  
 > **ধাপ ২:** বাম পাশের লিস্ট থেকে **"Tnayem48 Universal Runner"** সিলেক্ট করুন।  
 > **ধাপ ৩:** **Run workflow** ড্রপডাউন থেকে আপনার পছন্দের **Action** টি বেছে নিন।  
 > **ধাপ ৪:** রান শেষে **Artifacts** সেকশন থেকে আপনার APK ফাইলটি ডাউনলোড করে নিন।
+
+<a href="../../actions/">
+ <img src="https://img.shields.io/badge/Open--Actions-Run%20Workflow%20Now-blue?style=for-the-badge&logo=githubactions&logoColor=white" alt="Run Workflow">
+</a>
+
+> [!IMPORTANT]
+> যদি আপনি এই রিপোজিটরি **Fork** করে থাকেন, তবে অবশ্যই প্রথমে আপনার রিপোজিটরির **Actions** ট্যাবে গিয়ে **"Enable Actions"** বাটনে ক্লিক করতে হবে। নাহলে বাটনটি কাজ করবে না।
 
 ---
 
@@ -66,7 +71,7 @@
 <p align="center">
   <font color="#8b949e"> 
     © 2026 <b>Tarikul Islam</b> | <i>Universal Runner v2.0</i> <br />
-    Powered by GitHub Actions & Termux
+    Powered by GitHub Actions
   </font>
 </p>
 
