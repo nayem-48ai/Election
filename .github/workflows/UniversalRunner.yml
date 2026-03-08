@@ -34,13 +34,16 @@ jobs:
       - name: Update Guide Files
         run: |
           mkdir -p .github
-          # README এবং APP-build-Guide উভয়ই ডাউনলোড করা হচ্ছে
-          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/Guide" -o .github/README.md
-          curl -sL "https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd/APP-build-Guide.md" -o .github/APP-build-Guide.md
+          BASE_URL="https://raw.githubusercontent.com/nayem-48ai/nayem-48ai/refs/heads/tnx_bd"
+          
+          # ফাইলগুলো ডাউনলোড করা হচ্ছে
+          curl -sL "${BASE_URL}/Guide.md" -o .github/README.md
+          curl -sL "${BASE_URL}/APP-build-Guide.md" -o .github/APP-build-Guide.md
+          curl -sL "${BASE_URL}/README.md" -o .github/Deploy-Guide.md
           
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/README.md .github/APP-build-Guide.md
+          git add .github/*.md
           
           git diff --quiet --staged || (git commit -m "docs: auto-sync setup guides" && git push origin main)
 
